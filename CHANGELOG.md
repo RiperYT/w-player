@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.2] - unreleased
+## [0.1.2] - 2026-10-25
 
 - **Each card says where its video is**, with badges on the picture: Desktop, Lock Screen, Screen Saver (as macOS has
   them, so a wallpaper picked in System Settings shows too). The blue frame around the desktop's video is gone.
