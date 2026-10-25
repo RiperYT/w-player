@@ -7,7 +7,15 @@
       <sparkle:version>11</sparkle:version>
       <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://github.com/RiperYT/w-player/releases/tag/v0.1.2</sparkle:releaseNotesLink>
+      <description><![CDATA[<style>body { font: 13px -apple-system, sans-serif; } li { margin-bottom: 6px; }</style>
+<ul>
+<li><b>Each card says where its video is</b>, with badges on the picture: Desktop, Lock Screen, Screen Saver (as macOS has them, so a wallpaper picked in System Settings shows too). The blue frame around the desktop's video is gone.</li>
+<li><b>A click on a card asks where the video goes:</b> Set as Wallpaper (the desktop and the Lock Screen), or Show On › Desktop, Lock Screen and Menu Bar, Screen Saver, ticked where it is now. Unticking Desktop takes the video off the desktop, so macOS's own wallpaper shows there. A right-click opens the same menu.</li>
+<li><b>Placing a video on the Lock Screen says it's busy</b> under the grid until macOS has it (converting it and restarting macOS's wallpaper service takes a few seconds).</li>
+<li>Find Videos moved to the bottom of the window, away from the toolbar's own buttons.</li>
+<li>The Lock Screen item says Menu Bar too: on a Mac the Lock Screen is the system wallpaper, which also colours the menu bar, so a video on the Lock Screen only still sets the menu bar's colours.</li>
+</ul>]]></description>
+      <sparkle:fullReleaseNotesLink>https://github.com/RiperYT/w-player/releases</sparkle:fullReleaseNotesLink>
       <pubDate>Sun, 25 Oct 2026 13:42:48 +0000</pubDate>
       <enclosure url="https://github.com/RiperYT/w-player/releases/download/v0.1.2/W-Player-0.1.2.dmg" sparkle:edSignature="9JgZBbemIRk42RRIQmyl4Pw0l8oneH6TsBr60AmZDKQtJK7zoNtsms47uLLYzfRA8akgWnnQ0sB5p2jaG1MrCQ==" length="1808365" type="application/octet-stream"/>
     </item>
