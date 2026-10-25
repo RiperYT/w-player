@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>W-Player</title>
+    <item>
+      <title>W-Player 0.1.0</title>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/RiperYT/w-player/releases/tag/v0.1.0</sparkle:releaseNotesLink>
+      <pubDate>Sun, 25 Oct 2026 11:34:01 +0000</pubDate>
+      <enclosure url="https://github.com/RiperYT/w-player/releases/download/v0.1.0/W-Player-0.1.0.dmg" sparkle:edSignature="/9KrNTKoQJ5zxrX2P6A+2Bh4s5vWqc7stF7/XKourp6swUKCaDnjsNBLR2pYmJVm3Q9afIkrOvV3hQC+caXaBg==" length="1772027" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>
