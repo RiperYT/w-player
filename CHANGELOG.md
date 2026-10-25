@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1] - unreleased
+
+- **The Lock Screen moves with the desktop.** Clicking a video makes it macOS's own wallpaper as W-Player's video
+  wallpaper (macOS 26), not a still frame: it plays on the Lock Screen, and the menu bar takes its colours. The screen
+  saver stays as it was. 0.1.0 set the first frame, which stood still on the Lock Screen. On older macOS the first frame
+  is still what W-Player sets.
+
 ## [0.1.0] - 2026-10-25
 
 - **Your video on the desktop.** Add a video (drop it on the window, use Add Video, or open it with W-Player) and it

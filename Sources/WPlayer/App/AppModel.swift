@@ -78,11 +78,12 @@ final class AppModel {
         }
         monitor.start()
         showCurrent()
-        // A wallpaper chosen before W-Player matched the system wallpaper (0.1.0) gets its frame once.
-        if let current, !FileManager.default.fileExists(atPath: store.stillURL(current.id).path) {
-            Task { await matchSystemWallpaper(to: current) }
+        // A wallpaper chosen before this version made it the system one (0.1.0 set only a still) gets that once.
+        let needsMatch = current.map { defaults.string(forKey: "systemWallpaperID") != $0.id.uuidString } ?? false
+        Task {
+            if needsMatch, let current { await matchSystemWallpaper(to: current) }
+            await resyncLockScreen(atLaunch: true)
         }
-        Task { await resyncLockScreen(atLaunch: true) }
         watchManifest()
     }
 
@@ -98,18 +99,38 @@ final class AppModel {
         if let wallpaper { Task { await matchSystemWallpaper(to: wallpaper) } }
     }
 
-    /// The video's first frame as macOS's own wallpaper, made the first time it's needed.
+    /// Makes the video macOS's own wallpaper too. On macOS 26 that is W-Player's aerial of it: it moves on the Lock Screen
+    /// and the menu bar takes its colours. Without the aerials list (older macOS), the video's first frame.
     private func matchSystemWallpaper(to wallpaper: Wallpaper) async {
-        guard matchesSystemWallpaper else { return }
-        let still = store.stillURL(wallpaper.id)
+        guard matchesSystemWallpaper, isLive else { return }
         do {
-            if !FileManager.default.fileExists(atPath: still.path) {
-                try await VideoFile.writeStill(of: store.videoURL(wallpaper), to: still)
+            if aerials.isAvailable {
+                if let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }),
+                   !library.wallpapers[index].onLockScreen {
+                    library.wallpapers[index].onLockScreen = true
+                    save()
+                }
+                await resyncLockScreen()
+                // The export may have failed (resync said so), or another video been clicked meanwhile.
+                guard FileManager.default.fileExists(atPath: aerials.videoURL(wallpaper.id).path),
+                      library.currentID == wallpaper.id else { return }
+                try? await Task.sleep(for: .seconds(2))            // let the agent restarted by the resync settle
+                try SystemWallpaper.chooseAerial(wallpaper.id.uuidString)
+            } else {
+                try await setStill(of: wallpaper)
             }
-            try SystemWallpaper.set(still)
+            UserDefaults.standard.set(wallpaper.id.uuidString, forKey: "systemWallpaperID")
         } catch {
             alert = AppAlert(title: "The System Wallpaper Wasn't Changed", message: error.localizedDescription)
         }
+    }
+
+    private func setStill(of wallpaper: Wallpaper) async throws {
+        let still = store.stillURL(wallpaper.id)
+        if !FileManager.default.fileExists(atPath: still.path) {
+            try await VideoFile.writeStill(of: store.videoURL(wallpaper), to: still)
+        }
+        try SystemWallpaper.set(still)
     }
 
     func setSound(_ wallpaper: Wallpaper, _ on: Bool) {
@@ -247,14 +268,17 @@ final class AppModel {
         }
         library.wallpapers[index].onLockScreen = on
         save()
+        let isSystemWallpaper = SystemWallpaper.chosenAerialID == wallpaper.id.uuidString
         Task {
             await resyncLockScreen()
             if on {
                 alert = AppAlert(title: "\(wallpaper.title) Is in Wallpaper Settings",
-                                 message: "Choose it in System Settings › Wallpaper under W-Player. It plays on the Lock Screen and as the screen saver; the desktop keeps W-Player's own.",
+                                 message: "Choose it in System Settings › Wallpaper under W-Player, for example as the screen saver. Clicking a video in W-Player makes it the wallpaper and the Lock Screen by itself.",
                                  actionTitle: "Open Wallpaper Settings", action: Self.openWallpaperSettings)
             } else {
                 aerials.removeFiles(wallpaper.id)
+                // It was macOS's wallpaper: its first frame takes over, instead of an aerial that is gone.
+                if isSystemWallpaper { try? await setStill(of: wallpaper) }
             }
         }
     }

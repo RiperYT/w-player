@@ -25,8 +25,8 @@ struct WelcomeView: View {
                       text: "The wallpaper stops while the screen is locked or asleep, behind full-screen apps and in Low Power Mode. Video decoding runs on the Mac's media engine.")
                 Point(symbol: "speaker.slash", title: "Muted",
                       text: "Videos play without sound. Turn it on for one video from its card.")
-                Point(symbol: "lock", title: "Lock Screen and screen saver",
-                      text: "Click the lock on a card, then pick the video in System Settings › Wallpaper under W-Player (macOS 26).")
+                Point(symbol: "lock", title: "Lock Screen too",
+                      text: "The video you click becomes macOS's own wallpaper as well: it moves on the Lock Screen (macOS 26) and the menu bar takes its colours.")
             }
 
             Divider()

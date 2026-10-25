@@ -37,9 +37,12 @@ audio track still keeps the output device running.
 
 ## The system wallpaper
 
-The menu bar takes its colour from macOS's own wallpaper, not from windows at the desktop level, so W-Player sets the
-video's first frame (full size, `Thumbnails/<id>-still.jpg`) with `NSWorkspace.setDesktopImageURL` on every screen when
-a video is chosen. macOS keeps wallpaper choices in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`
+The menu bar takes its colour from macOS's own wallpaper, not from windows at the desktop level, and the Lock Screen
+shows that wallpaper. So when a video is chosen W-Player makes it macOS's wallpaper too: on macOS 26 it adds the video to
+the Lock Screen list (below) and chooses that aerial in `Index.plist` (`WallpaperChoice`: every `Desktop` choice becomes
+provider `com.apple.wallpaper.choice.aerials` with a binary plist `{assetID}`; a `Linked` choice is split so the screen
+saver stays), then restarts WallpaperAgent. Without the aerials list it sets the video's first frame
+(`Thumbnails/<id>-still.jpg`) with `NSWorkspace.setDesktopImageURL`. macOS keeps wallpaper choices in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`
 (`Desktop` and `Idle`, the screen saver, each a provider and a configuration). W-Player copies that file once at its first
 launch (`Index.plist.before-w-player`); Restore Wallpaper and Quit writes it back and restarts WallpaperAgent.
 
