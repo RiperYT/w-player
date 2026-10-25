@@ -21,8 +21,12 @@ struct MenuBarMenu: View {
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
         if model.updater.isEnabled {
-            Button("Check for Updates…") { model.updater.check() }
-                .disabled(!model.updater.canCheck)
+            if let version = model.updater.availableVersion {
+                Button("Update to \(version) Available…") { model.updater.check() }
+            } else {
+                Button("Check for Updates…") { model.updater.check() }
+                    .disabled(!model.updater.canCheck)
+            }
         }
         Button("Welcome to W-Player…") {
             model.showsWelcome = true

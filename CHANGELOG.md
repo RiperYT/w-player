@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3] - unreleased
+
+- **Updates show up.** Sparkle's window comes to the front instead of opening behind other apps (W-Player lives in the
+  menu bar), a found update waits in the menu as "Update to … Available…", and W-Player looks every 6 hours instead of
+  once a day.
+- The update window shows what changed, from this changelog, instead of loading GitHub's release page.
+
 ## [0.1.2] - 2026-10-25
 
 - **Each card says where its video is**, with badges on the picture: Desktop, Lock Screen, Screen Saver (as macOS has

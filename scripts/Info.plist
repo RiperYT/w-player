@@ -29,6 +29,8 @@
     </array>
     <key>SUFeedURL</key><string>https://github.com/RiperYT/w-player/releases/latest/download/appcast.xml</string>
     <key>SUEnableSystemProfiling</key><false/>
+    <!-- A menu bar app runs for days: look every 6 hours, not once a day. -->
+    <key>SUScheduledCheckInterval</key><integer>21600</integer>
     <key>NSHumanReadableCopyright</key><string>W-Player contributors. Apache License 2.0.</string>
 </dict>
 </plist>
