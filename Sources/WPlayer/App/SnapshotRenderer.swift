@@ -27,6 +27,9 @@ enum SnapshotRenderer {
                 ("library-empty", CGSize(width: 860, height: 560), AnyView(LibraryView().environment(empty))),
                 ("library", CGSize(width: 860, height: 560), AnyView(LibraryView().environment(full))),
                 ("settings", nil, AnyView(SettingsView().environment(full))),
+                ("card-menu", nil, AnyView(VStack(alignment: .leading, spacing: 6) {
+                    PlacementMenu(wallpaper: full.library.wallpapers[0], rename: {})
+                }.toggleStyle(.checkbox).buttonStyle(.borderless).padding(12).environment(full))),
                 ("menu", nil, AnyView(VStack(alignment: .leading, spacing: 6) { MenuBarMenu() }
                     .buttonStyle(.borderless).padding(12).environment(full))),
             ]

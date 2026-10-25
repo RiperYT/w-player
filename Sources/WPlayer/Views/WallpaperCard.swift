@@ -10,11 +10,12 @@ struct WallpaperCard: View {
     @State private var hovering = false
 
     private var isCurrent: Bool { model.library.currentID == wallpaper.id }
-    private var places: [String] {
-        var places: [String] = []
-        if isCurrent { places.append(model.pauseReason == nil ? "DESKTOP" : "PAUSED") }
-        if model.isOnLockScreen(wallpaper) { places.append("LOCK SCREEN") }
-        if model.isScreenSaver(wallpaper) { places.append("SCREEN SAVER") }
+    /// Where the video is: the desktop (W-Player's window), and what macOS has as its wallpaper and screen saver.
+    private var places: [Place] {
+        var places: [Place] = []
+        if isCurrent { places.append(.desktop) }
+        if model.isOnLockScreen(wallpaper) { places.append(.lockScreen) }
+        if model.isScreenSaver(wallpaper) { places.append(.screenSaver) }
         return places
     }
 
@@ -22,7 +23,7 @@ struct WallpaperCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Button { model.place(wallpaper, .everywhere) } label: { frame }
                 .buttonStyle(.plain)
-                .help("Set as Wallpaper: the desktop and the Lock Screen")
+                .help("Set as Wallpaper: the desktop, the Lock Screen and the menu bar")
             Text(wallpaper.title)
                 .font(.body.weight(.medium))
                 .lineLimit(1)
@@ -90,23 +91,26 @@ struct WallpaperCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
     }
 
-    /// The strip at the bottom of the frame: where the video is, then its size and length.
+    /// The strip at the bottom of the frame: where the video is, each place with its symbol, then its size and length.
     private var label: some View {
-        HStack(spacing: 6) {
-            if !places.isEmpty {
-                Circle().fill(model.pauseReason == nil || !isCurrent ? Color.green : Color.orange).frame(width: 6, height: 6)
-                Text(places.joined(separator: " · "))
-                    .lineLimit(1)
+        HStack(spacing: 8) {
+            ForEach(places, id: \.self) { place in
+                HStack(spacing: 3) {
+                    Image(systemName: place.symbol).font(.system(size: 8, weight: .bold))
+                    Text(places.count > 2 ? place.short : place.title)
+                }
+                .foregroundStyle(place == .desktop && model.pauseReason != nil ? Color.orange : Color.white)
             }
             if wallpaper.playsSound {
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 8))
             }
             Spacer(minLength: 4)
-            // Two places fill the strip: the length gives way.
-            Text((places.count > 1 ? [wallpaper.resolutionLabel] : [wallpaper.resolutionLabel, wallpaper.durationLabel])
+            // Places fill the strip: the length, then the size give way.
+            Text((places.count > 1 ? [places.count > 2 ? nil : wallpaper.resolutionLabel]
+                                   : [wallpaper.resolutionLabel, wallpaper.durationLabel])
                 .compactMap { $0 }.joined(separator: " · "))
-                .lineLimit(1)
         }
+        .lineLimit(1)
         .font(Theme.label)
         .tracking(0.6)
         .foregroundStyle(.white)
@@ -116,18 +120,61 @@ struct WallpaperCard: View {
     }
 }
 
+/// A place a video can be. The same symbols on the card and in its menu.
+enum Place: Hashable {
+    case desktop, lockScreen, screenSaver
+
+    var title: String {
+        switch self {
+        case .desktop: "DESKTOP"
+        case .lockScreen: "LOCK SCREEN"
+        case .screenSaver: "SCREEN SAVER"
+        }
+    }
+
+    var short: String {
+        switch self {
+        case .desktop: "DESKTOP"
+        case .lockScreen: "LOCK"
+        case .screenSaver: "SAVER"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .desktop: "menubar.dock.rectangle"
+        case .lockScreen: "lock.fill"
+        case .screenSaver: "moon.fill"
+        }
+    }
+}
+
 /// The card's menu: where the video goes, then the rest. The same on right-click and on the … button.
-private struct PlacementMenu: View {
+struct PlacementMenu: View {
     @Environment(AppModel.self) private var model
     let wallpaper: Wallpaper
     let rename: () -> Void
 
     var body: some View {
+        let onDesktop = model.library.currentID == wallpaper.id
+        let onLockScreen = model.isOnLockScreen(wallpaper)
+        let isScreenSaver = model.isScreenSaver(wallpaper)
         Button("Set as Wallpaper") { model.place(wallpaper, .everywhere) }
-        Button("Desktop Only") { model.place(wallpaper, .desktopOnly) }
-        Button("Lock Screen Only") { model.place(wallpaper, .lockScreenOnly) }
-        Button("Use as Screen Saver") { model.place(wallpaper, .screenSaver) }
+            .disabled(onDesktop && onLockScreen)
+        Section("Show On") {
+            // Ticked where the video is now. Unticking the desktop shows macOS's own wallpaper there; the Lock Screen and
+            // the screen saver change by picking another video for them.
+            Toggle(isOn: Binding(get: { onDesktop }, set: { model.place(wallpaper, $0 ? .desktopOnly : .offDesktop) })) {
+                Label("Desktop", systemImage: Place.desktop.symbol)
+            }
+            Toggle(isOn: Binding(get: { onLockScreen }, set: { if $0 { model.place(wallpaper, .lockScreenOnly) } })) {
+                Label("Lock Screen and Menu Bar", systemImage: Place.lockScreen.symbol)
+            }
+            Toggle(isOn: Binding(get: { isScreenSaver }, set: { if $0 { model.place(wallpaper, .screenSaver) } })) {
+                Label("Screen Saver", systemImage: Place.screenSaver.symbol)
+            }
             .disabled(!model.aerials.isAvailable)
+        }
         Divider()
         if wallpaper.hasAudio == true {
             Toggle("Play Sound", isOn: Binding(get: { wallpaper.playsSound }, set: { model.setSound(wallpaper, $0) }))

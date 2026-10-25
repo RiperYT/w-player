@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2] - unreleased
+
+- **The card says where a video is with symbols:** ▭ DESKTOP, 🔒 LOCK SCREEN, ☾ SCREEN SAVER.
+- **The … menu shows it too:** Show On › Desktop, Lock Screen and Menu Bar, Screen Saver, ticked where the video is now.
+  Unticking Desktop takes the video off the desktop, so macOS's own wallpaper shows there.
+- **Placing a video on the Lock Screen says it's busy** under the grid until macOS has it (converting it and restarting
+  macOS's wallpaper service takes a few seconds).
+- The Lock Screen item says Menu Bar too: on a Mac the Lock Screen is the system wallpaper, which also colours the menu
+  bar, so a video on the Lock Screen only still sets the menu bar's colours.
+
 ## [0.1.1] - 2026-10-25
 
 - **The Lock Screen moves with the desktop.** Clicking a video makes it macOS's own wallpaper as W-Player's video

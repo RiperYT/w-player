@@ -9,6 +9,8 @@ enum Placement {
     /// The desktop (W-Player's window) and macOS's own wallpaper: the Lock Screen and the menu bar's colours. A click.
     case everywhere
     case desktopOnly, lockScreenOnly, screenSaver
+    /// Takes it off the desktop: macOS's own wallpaper shows there.
+    case offDesktop
 }
 
 /// The W-Player videos macOS has chosen now (read from its Index.plist), for the labels on the cards.
@@ -110,6 +112,8 @@ final class AppModel {
             Task { await putOnSystem(wallpaper, .lockScreen) }
         case .desktopOnly:
             setCurrent(wallpaper)
+        case .offDesktop:
+            if library.currentID == wallpaper.id { setCurrent(nil) }
         case .lockScreenOnly:
             Task { await putOnSystem(wallpaper, .lockScreen) }
         case .screenSaver:
@@ -144,6 +148,10 @@ final class AppModel {
             }
             return
         }
+        // Converting and restarting macOS's wallpaper service takes a while: say so under the grid meanwhile.
+        let job = UUID()
+        busy[job] = slot == .lockScreen ? "Putting \(wallpaper.title) on the Lock Screen" : "Making \(wallpaper.title) the screen saver"
+        defer { busy[job] = nil }
         do {
             if let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }),
                !library.wallpapers[index].onLockScreen {
