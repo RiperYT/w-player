@@ -17,9 +17,11 @@ final class DesktopWallpaper {
     private let player = AVQueuePlayer()
     private var looper: AVPlayerLooper?
     private(set) var url: URL?
+    private var sound = false
     private var playing = false
     private var observers: [NSObjectProtocol] = []
     private var windowObservers: [NSObjectProtocol] = []
+    private var loading: Task<Void, Never>?
 
     init() {
         player.isMuted = true
@@ -32,10 +34,13 @@ final class DesktopWallpaper {
         })
     }
 
-    /// Shows a video, or takes the windows away for nil.
-    func show(_ url: URL?) {
-        guard url != self.url else { return }
+    /// Shows a video, or takes the windows away for nil. Without sound the video's audio track isn't even loaded: a
+    /// muted player still keeps the speakers running.
+    func show(_ url: URL?, sound: Bool) {
+        guard url != self.url || sound != self.sound else { return }
         self.url = url
+        self.sound = sound
+        loading?.cancel()
         looper?.disableLooping()
         player.removeAllItems()
         looper = nil
@@ -43,9 +48,29 @@ final class DesktopWallpaper {
             closeWindows()
             return
         }
-        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
-        layoutWindows()
-        if playing { player.play() }
+        loading = Task {
+            let item = await Self.item(url, sound: sound)
+            guard !Task.isCancelled else { return }
+            player.isMuted = !sound
+            looper = AVPlayerLooper(player: player, templateItem: item)
+            layoutWindows()
+            if playing { player.play() }
+        }
+    }
+
+    /// The video alone, or the whole file when its sound should play.
+    private static func item(_ url: URL, sound: Bool) async -> AVPlayerItem {
+        let asset = AVURLAsset(url: url)
+        guard !sound,
+              let video = try? await asset.loadTracks(withMediaType: .video).first,
+              let duration = try? await asset.load(.duration)
+        else { return AVPlayerItem(asset: asset) }
+        let composition = AVMutableComposition()
+        guard let track = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+              (try? track.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: video, at: .zero)) != nil
+        else { return AVPlayerItem(asset: asset) }
+        track.preferredTransform = (try? await video.load(.preferredTransform)) ?? .identity
+        return AVPlayerItem(asset: composition)
     }
 
     func setPlaying(_ playing: Bool, speed: Double) {

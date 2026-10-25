@@ -10,4 +10,13 @@
 - **Lock Screen and screen saver (macOS 26).** Right-click a video and choose Use on Lock Screen: it shows up in
   System Settings › Wallpaper under W-Player. W-Player keeps its entries there in order: it puts them back after a macOS
   update or another wallpaper app rewrites the list, and takes out broken entries that would hide all of Apple's videos.
-- A menu bar item with Pause, the library and Settings; speed (½×, ¾×, normal); Open at Login.
+- **The menu bar matches.** W-Player sets the video's first frame as macOS's own wallpaper, so the menu bar and
+  Mission Control take its colours (Settings › Match the system wallpaper to the video).
+- **Silent unless you ask.** Videos play without sound; the speaker button on a card turns one video's sound on. A muted
+  video doesn't even load its audio, so the speakers stay off.
+- **A welcome** that says W-Player runs in the background from the menu bar, what it pauses for, and where to find
+  videos (Find Videos: Pexels, Pixabay, MoeWalls, MotionBGs).
+- **Restore Wallpaper and Quit** in the menu bar puts back the wallpaper and screen saver you had before W-Player and
+  takes its videos out of System Settings.
+- A Dock icon while the library window is open; a menu bar item with Pause, the library and Settings the rest of the
+  time; speed (½×, ¾×, normal); Open at Login; Lock Screen and sound buttons on each card.

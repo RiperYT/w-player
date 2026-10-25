@@ -14,6 +14,7 @@ Sources/
     App/AppModel.swift          state and actions; the only place views call
     App/DesktopWallpaper.swift  the desktop windows and the looping player
     App/SystemMonitor.swift     power source, Low Power Mode, lock and sleep notifications
+    App/SystemWallpaper.swift   macOS's own wallpaper: the video's first frame; backup and restore of Index.plist
     Views/                      SwiftUI
 ```
 
@@ -28,6 +29,17 @@ Whether to play is one pure function, `PlaybackPolicy.pauseReason(conditions, pr
 conditions from IOKit (power source), `ProcessInfo` (Low Power Mode), `NSWorkspace` (screens asleep, session switch) and
 the `com.apple.screenIsLocked` distributed notifications. The windows' occlusion state says whether the desktop can be
 seen at all (a full-screen app hides it).
+
+A video without sound is played from an `AVMutableComposition` holding only its video track: a muted player with the
+audio track still keeps the output device running.
+
+## The system wallpaper
+
+The menu bar takes its colour from macOS's own wallpaper, not from windows at the desktop level, so W-Player sets the
+video's first frame (full size, `Thumbnails/<id>-still.jpg`) with `NSWorkspace.setDesktopImageURL` on every screen when
+a video is chosen. macOS keeps wallpaper choices in `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist`
+(`Desktop` and `Idle`, the screen saver, each a provider and a configuration). W-Player copies that file once at its first
+launch (`Index.plist.before-w-player`); Restore Wallpaper and Quit writes it back and restarts WallpaperAgent.
 
 ## The Lock Screen
 

@@ -39,6 +39,9 @@ struct WallpaperCard: View {
                     .foregroundStyle(.white, .black.opacity(0.35))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            if hovering || wallpaper.onLockScreen || wallpaper.playsSound {
+                cornerButtons
+            }
             label
         }
         .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
@@ -52,6 +55,25 @@ struct WallpaperCard: View {
         .onHover { hovering = $0 }
     }
 
+    /// Sound and Lock Screen, in the top right corner: on hover, and always while turned on.
+    private var cornerButtons: some View {
+        HStack(spacing: 6) {
+            if wallpaper.hasAudio != false {
+                CornerButton(symbol: wallpaper.playsSound ? "speaker.wave.2.fill" : "speaker.slash",
+                             on: wallpaper.playsSound,
+                             help: wallpaper.playsSound ? "Mute this video" : "Play this video's sound") {
+                    model.setSound(wallpaper, !wallpaper.playsSound)
+                }
+            }
+            CornerButton(symbol: wallpaper.onLockScreen ? "lock.fill" : "lock", on: wallpaper.onLockScreen,
+                         help: wallpaper.onLockScreen ? "Take it off the Lock Screen" : "Use on Lock Screen") {
+                model.setOnLockScreen(wallpaper, !wallpaper.onLockScreen)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+    }
+
     /// The strip at the bottom of the frame: whether it's on the desktop or the Lock Screen, then size and length.
     private var label: some View {
         HStack(spacing: 6) {
@@ -63,6 +85,9 @@ struct WallpaperCard: View {
                 if isCurrent { Text("·") }
                 Image(systemName: "lock.fill").font(.system(size: 8))
                 Text("LOCK SCREEN")
+            }
+            if wallpaper.playsSound {
+                Image(systemName: "speaker.wave.2.fill").font(.system(size: 8))
             }
             Spacer(minLength: 0)
             Text([wallpaper.resolutionLabel, wallpaper.durationLabel].compactMap { $0 }.joined(separator: " · "))
@@ -80,10 +105,32 @@ struct WallpaperCard: View {
             .disabled(isCurrent)
         Toggle("Use on Lock Screen", isOn: Binding(get: { wallpaper.onLockScreen },
                                                    set: { model.setOnLockScreen(wallpaper, $0) }))
+        Toggle("Play Sound", isOn: Binding(get: { wallpaper.playsSound }, set: { model.setSound(wallpaper, $0) }))
+            .disabled(wallpaper.hasAudio == false)
         Divider()
         Button("Rename…", action: rename)
         Button("Show in Finder") { model.revealInFinder(wallpaper) }
         Divider()
         Button("Remove from Library", role: .destructive) { model.remove(wallpaper) }
+    }
+}
+
+/// A small round button on a card's frame.
+private struct CornerButton: View {
+    let symbol: String
+    let on: Bool
+    let help: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .semibold))
+                .frame(width: 26, height: 26)
+                .foregroundStyle(on ? Color.white : Color.primary)
+                .background(on ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.regularMaterial), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 }

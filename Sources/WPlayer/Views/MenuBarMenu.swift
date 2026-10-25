@@ -20,8 +20,14 @@ struct MenuBarMenu: View {
             .keyboardShortcut("l")
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
+        Button("Welcome to W-Player…") {
+            model.showsWelcome = true
+            model.openLibraryWindow?()
+        }
         Divider()
         Button("Quit W-Player") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
+        Button("Restore Wallpaper and Quit") { model.restoreAndQuit() }
+            .help("Puts back the wallpaper and screen saver you had before W-Player and takes its videos out of System Settings")
     }
 }

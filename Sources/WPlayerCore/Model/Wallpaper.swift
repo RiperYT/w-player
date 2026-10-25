@@ -13,9 +13,13 @@ public struct Wallpaper: Codable, Identifiable, Hashable, Sendable {
     public var height: Int
     /// Also offered on the Lock Screen and as a screen saver (System Settings › Wallpaper › W-Player).
     public var onLockScreen: Bool
+    /// The video's own sound plays. Off unless the user turns it on for this video.
+    public var playsSound: Bool
+    /// Whether the file has an audio track; nil when not known (added by a version that didn't look).
+    public var hasAudio: Bool?
 
     public init(id: UUID = UUID(), title: String, fileName: String, addedAt: Date = Date(), duration: Double = 0,
-                width: Int = 0, height: Int = 0, onLockScreen: Bool = false) {
+                width: Int = 0, height: Int = 0, onLockScreen: Bool = false, playsSound: Bool = false, hasAudio: Bool? = nil) {
         self.id = id
         self.title = title
         self.fileName = fileName
@@ -24,6 +28,8 @@ public struct Wallpaper: Codable, Identifiable, Hashable, Sendable {
         self.width = width
         self.height = height
         self.onLockScreen = onLockScreen
+        self.playsSound = playsSound
+        self.hasAudio = hasAudio
     }
 
     // A field a newer version adds must not make an older library.json unreadable: everything but the identity has a default.
@@ -37,6 +43,8 @@ public struct Wallpaper: Codable, Identifiable, Hashable, Sendable {
         width = try c.decodeIfPresent(Int.self, forKey: .width) ?? 0
         height = try c.decodeIfPresent(Int.self, forKey: .height) ?? 0
         onLockScreen = try c.decodeIfPresent(Bool.self, forKey: .onLockScreen) ?? false
+        playsSound = try c.decodeIfPresent(Bool.self, forKey: .playsSound) ?? false
+        hasAudio = try c.decodeIfPresent(Bool.self, forKey: .hasAudio)
     }
 
     /// "4K", "1440P", "1080P", "720P" or the height, for the label under a card.

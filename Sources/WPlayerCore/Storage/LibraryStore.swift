@@ -20,6 +20,8 @@ public struct LibraryStore: Sendable {
 
     public func videoURL(_ wallpaper: Wallpaper) -> URL { videosFolder.appendingPathComponent(wallpaper.fileName) }
     public func thumbnailURL(_ id: UUID) -> URL { thumbnailsFolder.appendingPathComponent("\(id.uuidString).png") }
+    /// The full-size first frame, set as the system wallpaper (`VideoFile.writeStill`).
+    public func stillURL(_ id: UUID) -> URL { thumbnailsFolder.appendingPathComponent("\(id.uuidString)-still.jpg") }
 
     public func prepare() throws {
         for url in [folder, videosFolder, thumbnailsFolder] {
@@ -60,6 +62,7 @@ public struct LibraryStore: Sendable {
     public func deleteFiles(of wallpaper: Wallpaper) {
         try? FileManager.default.removeItem(at: videoURL(wallpaper))
         try? FileManager.default.removeItem(at: thumbnailURL(wallpaper.id))
+        try? FileManager.default.removeItem(at: stillURL(wallpaper.id))
     }
 }
 

@@ -21,6 +21,13 @@ final class AppModel {
     private(set) var busy: [UUID: String] = [:]
     var alert: AppAlert?
     private(set) var conditions = PlaybackConditions()
+    /// The welcome sheet: on the first launch, and from the menu.
+    var showsWelcome = !UserDefaults.standard.bool(forKey: "welcomeDone")
+
+    /// Set the system wallpaper to the video's first frame, so the menu bar and Mission Control match it.
+    var matchesSystemWallpaper: Bool {
+        didSet { UserDefaults.standard.set(matchesSystemWallpaper, forKey: "matchesSystemWallpaper") }
+    }
 
     var preferences: PlaybackPreferences {
         didSet {
@@ -41,6 +48,8 @@ final class AppModel {
 
     init() {
         let defaults = UserDefaults.standard
+        matchesSystemWallpaper = defaults.object(forKey: "matchesSystemWallpaper") as? Bool ?? true
+        SystemWallpaper.backUpOnce()
         preferences = PlaybackPreferences(
             pauseOnBattery: defaults.bool(forKey: "pauseOnBattery"),
             speed: defaults.object(forKey: "speed") as? Double ?? 1
@@ -62,6 +71,10 @@ final class AppModel {
         }
         monitor.start()
         showCurrent()
+        // A wallpaper chosen before W-Player matched the system wallpaper (0.1.0) gets its frame once.
+        if let current, !FileManager.default.fileExists(atPath: store.stillURL(current.id).path) {
+            Task { await matchSystemWallpaper(to: current) }
+        }
         Task { await resyncLockScreen(atLaunch: true) }
         watchManifest()
     }
@@ -75,6 +88,53 @@ final class AppModel {
         library.currentID = wallpaper?.id
         save()
         showCurrent()
+        if let wallpaper { Task { await matchSystemWallpaper(to: wallpaper) } }
+    }
+
+    /// The video's first frame as macOS's own wallpaper, made the first time it's needed.
+    private func matchSystemWallpaper(to wallpaper: Wallpaper) async {
+        guard matchesSystemWallpaper else { return }
+        let still = store.stillURL(wallpaper.id)
+        do {
+            if !FileManager.default.fileExists(atPath: still.path) {
+                try await VideoFile.writeStill(of: store.videoURL(wallpaper), to: still)
+            }
+            try SystemWallpaper.set(still)
+        } catch {
+            alert = AppAlert(title: "The System Wallpaper Wasn't Changed", message: error.localizedDescription)
+        }
+    }
+
+    func setSound(_ wallpaper: Wallpaper, _ on: Bool) {
+        guard let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }) else { return }
+        library.wallpapers[index].playsSound = on
+        save()
+        showCurrent()
+    }
+
+    func finishWelcome() {
+        UserDefaults.standard.set(true, forKey: "welcomeDone")
+        showsWelcome = false
+    }
+
+    /// Puts macOS back the way it was before W-Player: the wallpaper and screen saver the user had, no W-Player videos
+    /// in System Settings. The library stays for next time.
+    func restoreAndQuit() {
+        desktop.show(nil, sound: false)
+        for index in library.wallpapers.indices { library.wallpapers[index].onLockScreen = false }
+        save()
+        let listChanged = aerials.isAvailable && ((try? aerials.sync([]))?.changed ?? false)
+        for wallpaper in library.wallpapers { aerials.removeFiles(wallpaper.id) }
+        if SystemWallpaper.hasBackup {
+            do {
+                try SystemWallpaper.restore()                  // restarts WallpaperAgent too
+            } catch {
+                LockScreenAerials.reloadWallpaperAgent()
+            }
+        } else if listChanged {
+            LockScreenAerials.reloadWallpaperAgent()
+        }
+        NSApp.terminate(nil)
     }
 
     func togglePause() {
@@ -87,7 +147,7 @@ final class AppModel {
     }
 
     private func showCurrent() {
-        desktop.show(current.map(store.videoURL))
+        desktop.show(current.map(store.videoURL), sound: current?.playsSound ?? false)
         applyPlayback()
     }
 
@@ -111,15 +171,18 @@ final class AppModel {
                         wallpaper.duration = info.duration
                         wallpaper.width = info.width
                         wallpaper.height = info.height
+                        wallpaper.hasAudio = info.hasAudio
                         try await VideoFile.writeThumbnail(of: file, to: store.thumbnailURL(wallpaper.id))
                     } catch {
                         store.deleteFiles(of: wallpaper)
                         throw error
                     }
                     library.wallpapers.append(wallpaper)
-                    if library.currentID == nil { library.currentID = wallpaper.id }
-                    save()
-                    showCurrent()
+                    if library.currentID == nil {
+                        setCurrent(wallpaper)
+                    } else {
+                        save()
+                    }
                 } catch {
                     alert = AppAlert(title: "\(url.lastPathComponent) Wasn't Added",
                                      message: "W-Player can't play it: \(error.localizedDescription)")

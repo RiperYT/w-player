@@ -20,9 +20,13 @@ struct SettingsView: View {
             }
             Section("General") {
                 Toggle("Open at login", isOn: $model.opensAtLogin)
+                Toggle("Match the system wallpaper to the video", isOn: $model.matchesSystemWallpaper)
+                Text("Sets the video's first frame as macOS's own wallpaper, so the menu bar and Mission Control take its colours. Restore Wallpaper and Quit in the menu bar puts back the one you had.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             Section("Lock Screen") {
-                Text("Right-click a video and choose Use on Lock Screen. It then shows up in System Settings › Wallpaper under W-Player, where you pick it for the Lock Screen and the screen saver.")
+                Text("Click the lock on a video (or right-click it and choose Use on Lock Screen). It then shows up in System Settings › Wallpaper under W-Player, where you pick it for the Lock Screen and the screen saver.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Button("Open Wallpaper Settings") { AppModel.openWallpaperSettings() }

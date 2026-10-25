@@ -9,7 +9,11 @@ screen, stops it when nobody sees it, and on macOS 26 also puts it on the Lock S
   Low Power Mode, and on battery power if you want. It never keeps the display awake.
 - **Lock Screen and screen saver (macOS 26).** Right-click a video, choose **Use on Lock Screen**, then pick it in
   **System Settings › Wallpaper** under **W-Player**.
-- **No account, no telemetry, no network.** W-Player only reads the files you give it.
+- **Silent unless you ask**, per video.
+- **The menu bar matches** the video: its first frame becomes macOS's own wallpaper. **Restore Wallpaper and Quit** in
+  the menu bar puts back what you had.
+- **No account, no telemetry, no network.** W-Player only reads the files you give it. **Find Videos** links to sites
+  to download from.
 
 ## Why the desktop needs an app
 

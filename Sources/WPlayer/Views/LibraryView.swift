@@ -26,7 +26,12 @@ struct LibraryView: View {
                         .padding(8)
                 }
             }
+            .sheet(isPresented: $model.showsWelcome) { WelcomeView() }
+            // A Dock icon (and ⌘-Tab) while the library is open; the menu bar item the rest of the time.
+            .onAppear { NSApp.setActivationPolicy(.regular) }
+            .onDisappear { NSApp.setActivationPolicy(.accessory) }
             .toolbar {
+                ToolbarItem { FindVideosMenu() }
                 ToolbarItem {
                     Button { model.togglePause() } label: {
                         Label(model.conditions.userPaused ? "Resume" : "Pause",
@@ -66,6 +71,7 @@ struct LibraryView: View {
                 Text("Drop a video here, or add one. It plays on your desktop, under the icons.")
             } actions: {
                 Button("Add Video…") { importing = true }
+                FindVideosMenu()
             }
         } else {
             ScrollView {
