@@ -27,6 +27,8 @@
             <key>LSItemContentTypes</key><array><string>public.movie</string></array>
         </dict>
     </array>
+    <key>SUFeedURL</key><string>https://github.com/RiperYT/w-player/releases/latest/download/appcast.xml</string>
+    <key>SUEnableSystemProfiling</key><false/>
     <key>NSHumanReadableCopyright</key><string>W-Player contributors. Apache License 2.0.</string>
 </dict>
 </plist>

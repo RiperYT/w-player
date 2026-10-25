@@ -8,6 +8,10 @@ let package = Package(
         .library(name: "WPlayerCore", targets: ["WPlayerCore"]),
         .executable(name: "WPlayer", targets: ["WPlayer"]),
     ],
+    dependencies: [
+        // Updates of W-Player itself (MIT). A binary framework: SwiftPM checks the checksum its Package.swift pins.
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+    ],
     targets: [
         // The library, the playback rules and the Lock Screen manifest. No SwiftUI here.
         .target(
@@ -17,7 +21,7 @@ let package = Package(
         // The macOS app (SwiftUI + the AppKit desktop windows). Assembled into W-Player.app by scripts/build-app.sh.
         .executableTarget(
             name: "WPlayer",
-            dependencies: ["WPlayerCore"],
+            dependencies: ["WPlayerCore", .product(name: "Sparkle", package: "Sparkle")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

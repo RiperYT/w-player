@@ -2,9 +2,20 @@ import AppKit
 import SwiftUI
 import WPlayerCore
 
+/// The entry point. `WPlayer --render-snapshots <folder>` draws the windows into PNGs and exits (`SnapshotRenderer`).
+@main @MainActor
+enum Launcher {
+    static func main() {
+        let arguments = CommandLine.arguments
+        if let index = arguments.firstIndex(of: "--render-snapshots"), index + 1 < arguments.count {
+            SnapshotRenderer.run(into: URL(fileURLWithPath: arguments[index + 1]))
+        }
+        WPlayerApp.main()
+    }
+}
+
 /// A menu bar app: the wallpaper keeps moving with no window open. The library window opens from the menu, on the
 /// first launch, and when W-Player is opened again from Finder.
-@main
 struct WPlayerApp: App {
     @State private var model: AppModel
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
@@ -63,6 +74,7 @@ private struct MenuBarIcon: View {
     var body: some View {
         Image(systemName: model.pauseReason == nil && model.current != nil ? "play.rectangle.fill" : "play.rectangle")
             .onAppear {
+                if model.isLive { model.updater.start() }
                 model.openLibraryWindow = {
                     openWindow(id: "library")
                     NSApp.activate()

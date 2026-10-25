@@ -7,7 +7,7 @@ Thanks for helping.
    `Tests/WPlayerCoreTests`).
 3. Say which Mac and macOS version you tested on.
 4. Run `make test` before you push.
-5. No network calls, analytics or accounts.
+5. No new network calls, analytics or accounts (the update check is the only one).
 6. Changes to how W-Player edits macOS's wallpaper manifest need a test in `AerialsManifestTests`: a broken manifest
    hides every video wallpaper on the Mac.
 

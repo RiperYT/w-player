@@ -28,8 +28,8 @@ struct LibraryView: View {
             }
             .sheet(isPresented: $model.showsWelcome) { WelcomeView() }
             // A Dock icon (and ⌘-Tab) while the library is open; the menu bar item the rest of the time.
-            .onAppear { NSApp.setActivationPolicy(.regular) }
-            .onDisappear { NSApp.setActivationPolicy(.accessory) }
+            .onAppear { if model.isLive { NSApp.setActivationPolicy(.regular) } }
+            .onDisappear { if model.isLive { NSApp.setActivationPolicy(.accessory) } }
             .toolbar {
                 ToolbarItem { FindVideosMenu() }
                 ToolbarItem {

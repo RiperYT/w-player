@@ -18,5 +18,7 @@
   videos (Find Videos: Pexels, Pixabay, MoeWalls, MotionBGs).
 - **Restore Wallpaper and Quit** in the menu bar puts back the wallpaper and screen saver you had before W-Player and
   takes its videos out of System Settings.
+- **Updates in the app.** Check for Updates… in the menu bar, and an automatic check you can turn off in Settings
+  (Sparkle 2.10.0; updates are signed and checked against the key in the app).
 - A Dock icon while the library window is open; a menu bar item with Pause, the library and Settings the rest of the
   time; speed (½×, ¾×, normal); Open at Login; Lock Screen and sound buttons on each card.

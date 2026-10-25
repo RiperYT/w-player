@@ -15,7 +15,7 @@ repository is English.
 - ❗ macOS's wallpaper manifest (`entries.json`) is shared with macOS and other apps. One category whose
   `representativeAssetID` names no asset makes macOS drop every video wallpaper, Apple's included. Only edit it through
   `AerialsManifest` / `LockScreenAerials.sync`, which never writes such a file; keep its tests passing.
-- No telemetry, no accounts, no network calls. Videos come from the user's own files.
+- No telemetry, no accounts. The only network call is Sparkle's update check (GitHub). Videos come from the user's own files.
 - UI text: short, plain verbs, says what happens. Native controls and SF Symbols; tokens in `Views/Components/Theme.swift`.
 - New Codable fields use `decodeIfPresent` with a default, so an older library.json stays readable.
 
@@ -26,6 +26,8 @@ make app      # build/W-Player.app
 make run      # build and open
 make release  # disk image into releases/v<VERSION>/
 make publish  # release + GitHub release
+.build/debug/WPlayer --render-snapshots <folder>          # every window as PNGs, light and dark
+WPLAYER_LIVE=1 swift test --filter LiveSystemTests       # the real Lock Screen list, macOS 26, W-Player quit
 ```
 
 Commits: Conventional Commits (`feat(core): …`, `fix(app): …`, `docs: …`, `test: …`, `chore: …`).

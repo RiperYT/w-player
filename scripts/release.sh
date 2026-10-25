@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
-# Builds the app and puts W-Player-<version>.dmg into releases/v<version>/.
-#   scripts/release.sh             the disk image only
-#   scripts/release.sh --publish   and a GitHub release with it (needs gh)
-# Signing and notarization aren't part of this script: pass SIGN_IDENTITY to build-app.sh for a signed app.
+# Packs a release into releases/v<version>/: a disk image that opens to W-Player and a shortcut to Applications to
+# drag it onto, and its SHA-256. With --publish it is also attached to a GitHub release.
+#   scripts/release.sh            build + disk image + checksums
+#   scripts/release.sh --publish  also: gh release create v<version>
+# SIGN_IDENTITY is passed on to scripts/build-app.sh; NO_BUILD=1 packs the build/W-Player.app that is already there.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION="$(cat VERSION)"
-scripts/build-app.sh
-
+[ "${NO_BUILD:-0}" = 1 ] || scripts/build-app.sh
 OUT="releases/v$VERSION"
-DMG="$OUT/W-Player-$VERSION.dmg"
-STAGE="$(mktemp -d)"
-trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$OUT"
-ditto build/W-Player.app "$STAGE/W-Player.app"
-ln -s /Applications "$STAGE/Applications"
+DMG="$OUT/W-Player-$VERSION.dmg"
 rm -f "$DMG"
-hdiutil create -volname "W-Player $VERSION" -srcfolder "$STAGE" -format UDZO -quiet "$DMG"
+STAGE="$(mktemp -d)"
+cp -R build/W-Player.app "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+hdiutil create -quiet -volname "W-Player $VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "$DMG"
+rm -rf "$STAGE"
+(cd "$OUT" && shasum -a 256 "W-Player-$VERSION.dmg" > SHA256SUMS)
 echo "release: $DMG"
-
+cat "$OUT/SHA256SUMS"
 if [ "${1:-}" = "--publish" ]; then
-  NOTES="$(awk "/^## \\[$VERSION\\]/{found=1; next} /^## \\[/{if (found) exit} found" CHANGELOG.md)"
-  gh release create "v$VERSION" "$DMG" --title "W-Player $VERSION" --notes "$NOTES"
+  NOTES="$(awk "/^## \\[$VERSION\\]/{flag=1;next}/^## \\[/{flag=0}flag" CHANGELOG.md)"
+  gh release create "v$VERSION" "$DMG" "$OUT/SHA256SUMS" --title "W-Player $VERSION" --notes "$NOTES"
 fi

@@ -25,6 +25,7 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if model.updater.isEnabled { UpdateSettings() }
             Section("Lock Screen") {
                 Text("Click the lock on a video (or right-click it and choose Use on Lock Screen). It then shows up in System Settings › Wallpaper under W-Player, where you pick it for the Lock Screen and the screen saver.")
                     .font(.callout)
@@ -35,5 +36,19 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct UpdateSettings: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var updater = model.updater
+        Section("Updates") {
+            Toggle("Check for updates automatically", isOn: $updater.automaticallyChecks)
+            Text("W-Player asks GitHub whether a newer version is out. The request says which W-Player you have; nothing else is sent.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
     }
 }

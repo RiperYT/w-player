@@ -20,6 +20,10 @@ struct MenuBarMenu: View {
             .keyboardShortcut("l")
         SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
+        if model.updater.isEnabled {
+            Button("Check for Updates…") { model.updater.check() }
+                .disabled(!model.updater.canCheck)
+        }
         Button("Welcome to W-Player…") {
             model.showsWelcome = true
             model.openLibraryWindow?()

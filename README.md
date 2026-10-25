@@ -12,8 +12,8 @@ screen, stops it when nobody sees it, and on macOS 26 also puts it on the Lock S
 - **Silent unless you ask**, per video.
 - **The menu bar matches** the video: its first frame becomes macOS's own wallpaper. **Restore Wallpaper and Quit** in
   the menu bar puts back what you had.
-- **No account, no telemetry, no network.** W-Player only reads the files you give it. **Find Videos** links to sites
-  to download from.
+- **No account, no telemetry.** W-Player only reads the files you give it, and talks to nothing but GitHub, to see
+  whether a newer W-Player is out (Settings › Updates). **Find Videos** links to sites to download from.
 
 ## Why the desktop needs an app
 
@@ -29,7 +29,9 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Download
 
 Get `W-Player-<version>.dmg` from [Releases](https://github.com/RiperYT/w-player/releases) (the same files are kept in
-[`releases/`](releases/)). Open it and drag **W-Player** onto **Applications**. W-Player lives in the menu bar.
+[`releases/`](releases/)). Open it and drag **W-Player** onto **Applications**. The app is signed with a Developer ID and notarized by Apple, so it
+opens like any other app. W-Player lives in the menu bar; later versions arrive in the app itself
+(**Check for Updates…** in its menu).
 
 **Needs:** a Mac with Apple Silicon, macOS 15 Sequoia or later; macOS 26 Tahoe or later for the Lock Screen.
 
@@ -38,9 +40,10 @@ Get `W-Player-<version>.dmg` from [Releases](https://github.com/RiperYT/w-player
 ```bash
 make test   # unit tests
 make run    # build build/W-Player.app and open it
+.build/debug/WPlayer --render-snapshots /tmp/shots   # draw every window into PNGs, light and dark, without opening any
 ```
 
-Swift 6 toolchain (Xcode 16 or later). No dependencies.
+Swift 6 toolchain (Xcode 16 or later). The one dependency is [Sparkle](https://sparkle-project.org) for updates.
 
 ## License
 

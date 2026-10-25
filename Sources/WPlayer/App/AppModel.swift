@@ -37,8 +37,12 @@ final class AppModel {
         }
     }
 
-    let store = LibraryStore()
+    let store: LibraryStore
+    /// W-Player's own updates (Sparkle), in a build that carries the release key.
+    let updater = AppUpdater()
     let aerials = LockScreenAerials()
+    /// False for the snapshot renderer: no desktop windows, no system wallpaper, no Lock Screen, no watching.
+    @ObservationIgnored let isLive: Bool
     @ObservationIgnored private let desktop = DesktopWallpaper()
     @ObservationIgnored private let monitor = SystemMonitor()
     @ObservationIgnored private var manifestWatch: DispatchSourceFileSystemObject?
@@ -46,10 +50,12 @@ final class AppModel {
     /// Opens the library window; set by the menu bar item, which has SwiftUI's `openWindow`.
     @ObservationIgnored var openLibraryWindow: (() -> Void)?
 
-    init() {
+    init(store: LibraryStore = LibraryStore(), live: Bool = true) {
+        self.store = store
+        isLive = live
         let defaults = UserDefaults.standard
         matchesSystemWallpaper = defaults.object(forKey: "matchesSystemWallpaper") as? Bool ?? true
-        SystemWallpaper.backUpOnce()
+        if live { SystemWallpaper.backUpOnce() }
         preferences = PlaybackPreferences(
             pauseOnBattery: defaults.bool(forKey: "pauseOnBattery"),
             speed: defaults.object(forKey: "speed") as? Double ?? 1
@@ -60,6 +66,7 @@ final class AppModel {
             alert = AppAlert(title: "The Library Couldn't Be Read",
                              message: "W-Player started with an empty library and kept the old file as \(setAside.lastPathComponent) in \(store.folder.path).")
         }
+        guard live else { return }
         desktop.onVisibilityChange = { [weak self] visible in self?.update { $0.desktopHidden = !visible } }
         monitor.onChange = { [weak self] system in
             self?.update {

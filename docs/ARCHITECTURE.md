@@ -14,7 +14,9 @@ Sources/
     App/AppModel.swift          state and actions; the only place views call
     App/DesktopWallpaper.swift  the desktop windows and the looping player
     App/SystemMonitor.swift     power source, Low Power Mode, lock and sleep notifications
-    App/SystemWallpaper.swift   macOS's own wallpaper: the video's first frame; backup and restore of Index.plist
+    App/AppUpdater.swift        Sparkle, started only in a build that carries the update key (SelfUpdate)
+    App/SnapshotRenderer.swift  --render-snapshots: every window into PNGs, off screen, with a made-up library
+    LockScreen/SystemWallpaper.swift (core)  macOS's own wallpaper: the first frame; backup and restore of Index.plist
     Views/                      SwiftUI
 ```
 
@@ -60,3 +62,12 @@ W-Player owns one category (`57504C00-0000-4000-8000-000000000001`, "W-Player") 
 
 `AppModel` syncs at launch and two seconds after any change to the manifest's folder, so entries dropped by a macOS
 update or another app come back.
+
+## Checking it
+
+- `make test`: the core, no system changes.
+- `.build/debug/WPlayer --render-snapshots <folder>`: the welcome, the library (empty and with three made-up videos),
+  Settings and the menu, light and dark. Nothing real is touched.
+- `WPLAYER_LIVE=1 swift test --filter LiveSystemTests` (macOS 26, W-Player quit): adds a video to the real wallpaper
+  list, checks in WallpaperAgent's log that it loaded the list ("Did update manifest", no "Unable to load"), and puts
+  the list back as it was.
