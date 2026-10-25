@@ -13,7 +13,7 @@ struct LibraryView: View {
     var body: some View {
         @Bindable var model = model
         content
-            .safeAreaInset(edge: .bottom) { BusyBar() }
+            .safeAreaInset(edge: .bottom) { BottomBar(showsFindVideos: !model.library.wallpapers.isEmpty) }
             .dropDestination(for: URL.self) { urls, _ in
                 let videos = urls.filter { UTType(filenameExtension: $0.pathExtension)?.conforms(to: .movie) == true }
                 model.add(videos)
@@ -31,7 +31,6 @@ struct LibraryView: View {
             .onAppear { if model.isLive { NSApp.setActivationPolicy(.regular) } }
             .onDisappear { if model.isLive { NSApp.setActivationPolicy(.accessory) } }
             .toolbar {
-                ToolbarItem { FindVideosMenu() }
                 ToolbarItem {
                     SettingsLink { Label("Settings", systemImage: "gearshape") }
                         .help("Settings")
@@ -94,18 +93,23 @@ struct LibraryView: View {
     }
 }
 
-/// What's being added or prepared right now.
-private struct BusyBar: View {
+/// Under the grid: where to find more videos, and what's being added or prepared right now.
+private struct BottomBar: View {
     @Environment(AppModel.self) private var model
+    /// The empty library has its own Find Videos in the middle.
+    let showsFindVideos: Bool
 
     var body: some View {
-        if let title = model.busy.values.sorted().first {
+        if showsFindVideos || !model.busy.isEmpty {
             HStack(spacing: 8) {
-                ProgressView().controlSize(.small)
-                Text(model.busy.count > 1 ? "\(title) and \(model.busy.count - 1) more…" : "\(title)…")
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
+                if let title = model.busy.values.sorted().first {
+                    ProgressView().controlSize(.small)
+                    Text(model.busy.count > 1 ? "\(title) and \(model.busy.count - 1) more…" : "\(title)…")
+                        .lineLimit(1)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
+                if showsFindVideos { FindVideosMenu() }
             }
             .font(.callout)
             .padding(.horizontal, Theme.pagePadding)

@@ -1,19 +1,18 @@
 import SwiftUI
 import WPlayerCore
 
-/// One video: its frame, a label strip that says where it is (● DESKTOP · LOCK SCREEN · SCREEN SAVER, as macOS has it),
-/// and its title. A click puts it everywhere; the … menu has the other places.
+/// One video: its frame with badges for where it is (Desktop, Lock Screen, Screen Saver, as macOS has them), a strip
+/// with its size and length, and its title. A click opens the menu of places; so does a right-click.
 struct WallpaperCard: View {
     @Environment(AppModel.self) private var model
     let wallpaper: Wallpaper
     let rename: () -> Void
     @State private var hovering = false
 
-    private var isCurrent: Bool { model.library.currentID == wallpaper.id }
     /// Where the video is: the desktop (W-Player's window), and what macOS has as its wallpaper and screen saver.
     private var places: [Place] {
         var places: [Place] = []
-        if isCurrent { places.append(.desktop) }
+        if model.library.currentID == wallpaper.id { places.append(.desktop) }
         if model.isOnLockScreen(wallpaper) { places.append(.lockScreen) }
         if model.isScreenSaver(wallpaper) { places.append(.screenSaver) }
         return places
@@ -21,9 +20,15 @@ struct WallpaperCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button { model.place(wallpaper, .everywhere) } label: { frame }
-                .buttonStyle(.plain)
-                .help("Set as Wallpaper: the desktop, the Lock Screen and the menu bar")
+            Menu {
+                PlacementMenu(wallpaper: wallpaper, rename: rename)
+            } label: {
+                frame
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .help("Choose where this video goes")
             Text(wallpaper.title)
                 .font(.body.weight(.medium))
                 .lineLimit(1)
@@ -42,21 +47,24 @@ struct WallpaperCard: View {
             .aspectRatio(Theme.cardAspect, contentMode: .fit)
             .clipped()
 
-            if hovering && !isCurrent {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 42))
-                    .foregroundStyle(.white, .black.opacity(0.35))
+            if hovering {
+                Label("Set as…", systemImage: "rectangle.stack.badge.play")
+                    .font(.callout.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.regularMaterial, in: Capsule())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            if hovering || wallpaper.playsSound {
-                cornerButtons
+            badges
+            if wallpaper.hasAudio == true && (hovering || wallpaper.playsSound) {
+                soundButton
             }
-            label
+            strip
         }
         .clipShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(isCurrent ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: isCurrent ? 2 : 1)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
         }
         .shadow(color: .black.opacity(hovering ? 0.18 : 0.08), radius: hovering ? 14 : 6, y: 3)
         .scaleEffect(hovering ? 1.015 : 1)
@@ -64,51 +72,44 @@ struct WallpaperCard: View {
         .onHover { hovering = $0 }
     }
 
-    /// The sound (only for a video that has some) and the … menu, in the top right corner.
-    private var cornerButtons: some View {
-        HStack(spacing: 6) {
-            if wallpaper.hasAudio == true {
-                Button { model.setSound(wallpaper, !wallpaper.playsSound) } label: {
-                    CornerIcon(symbol: wallpaper.playsSound ? "speaker.wave.2.fill" : "speaker.slash", on: wallpaper.playsSound)
+    /// Top left: one badge per place the video is in, readable at a glance.
+    private var badges: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(places, id: \.self) { place in
+                HStack(spacing: 4) {
+                    Image(systemName: place.symbol)
+                    Text(place == .desktop && model.pauseReason != nil ? "Desktop · Paused" : place.name)
                 }
-                .buttonStyle(.plain)
-                .help(wallpaper.playsSound ? "Mute this video" : "Play this video's sound")
-            }
-            if hovering {
-                Menu {
-                    PlacementMenu(wallpaper: wallpaper, rename: rename)
-                } label: {
-                    CornerIcon(symbol: "ellipsis", on: false)
-                }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("Where to use this video, and more")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color.black.opacity(0.62), in: Capsule())
             }
         }
+        .padding(8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// Top right, on a video that has sound.
+    private var soundButton: some View {
+        Button { model.setSound(wallpaper, !wallpaper.playsSound) } label: {
+            CornerIcon(symbol: wallpaper.playsSound ? "speaker.wave.2.fill" : "speaker.slash", on: wallpaper.playsSound)
+        }
+        .buttonStyle(.plain)
+        .help(wallpaper.playsSound ? "Mute this video" : "Play this video's sound")
         .padding(8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
     }
 
-    /// The strip at the bottom of the frame: where the video is, each place with its symbol, then its size and length.
-    private var label: some View {
-        HStack(spacing: 8) {
-            ForEach(places, id: \.self) { place in
-                HStack(spacing: 3) {
-                    Image(systemName: place.symbol).font(.system(size: 8, weight: .bold))
-                    Text(places.count > 2 ? place.short : place.title)
-                }
-                .foregroundStyle(place == .desktop && model.pauseReason != nil ? Color.orange : Color.white)
-            }
+    /// The strip at the bottom of the frame: size and length.
+    private var strip: some View {
+        HStack(spacing: 6) {
             if wallpaper.playsSound {
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 8))
             }
-            Spacer(minLength: 4)
-            // Places fill the strip: the length, then the size give way.
-            Text((places.count > 1 ? [places.count > 2 ? nil : wallpaper.resolutionLabel]
-                                   : [wallpaper.resolutionLabel, wallpaper.durationLabel])
-                .compactMap { $0 }.joined(separator: " · "))
+            Spacer(minLength: 0)
+            Text([wallpaper.resolutionLabel, wallpaper.durationLabel].compactMap { $0 }.joined(separator: " · "))
         }
         .lineLimit(1)
         .font(Theme.label)
@@ -132,11 +133,11 @@ enum Place: Hashable {
         }
     }
 
-    var short: String {
+    var name: String {
         switch self {
-        case .desktop: "DESKTOP"
-        case .lockScreen: "LOCK"
-        case .screenSaver: "SAVER"
+        case .desktop: "Desktop"
+        case .lockScreen: "Lock Screen"
+        case .screenSaver: "Screen Saver"
         }
     }
 

@@ -2,11 +2,14 @@
 
 ## [0.1.2] - unreleased
 
-- **The card says where a video is with symbols:** ▭ DESKTOP, 🔒 LOCK SCREEN, ☾ SCREEN SAVER.
-- **The … menu shows it too:** Show On › Desktop, Lock Screen and Menu Bar, Screen Saver, ticked where the video is now.
-  Unticking Desktop takes the video off the desktop, so macOS's own wallpaper shows there.
+- **Each card says where its video is**, with badges on the picture: Desktop, Lock Screen, Screen Saver (as macOS has
+  them, so a wallpaper picked in System Settings shows too). The blue frame around the desktop's video is gone.
+- **A click on a card asks where the video goes:** Set as Wallpaper (the desktop and the Lock Screen), or Show On ›
+  Desktop, Lock Screen and Menu Bar, Screen Saver, ticked where it is now. Unticking Desktop takes the video off the
+  desktop, so macOS's own wallpaper shows there. A right-click opens the same menu.
 - **Placing a video on the Lock Screen says it's busy** under the grid until macOS has it (converting it and restarting
   macOS's wallpaper service takes a few seconds).
+- Find Videos moved to the bottom of the window, away from the toolbar's own buttons.
 - The Lock Screen item says Menu Bar too: on a Mac the Lock Screen is the system wallpaper, which also colours the menu
   bar, so a video on the Lock Screen only still sets the menu bar's colours.
 
