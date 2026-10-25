@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-10-25
 
 - **Your video on the desktop.** Add a video (drop it on the window, use Add Video, or open it with W-Player) and it
   plays under the desktop icons on every screen and every Space, muted and looping.
