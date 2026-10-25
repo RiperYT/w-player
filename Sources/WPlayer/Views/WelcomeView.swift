@@ -26,7 +26,7 @@ struct WelcomeView: View {
                 Point(symbol: "speaker.slash", title: "Muted",
                       text: "Videos play without sound. Turn it on for one video from its card.")
                 Point(symbol: "lock", title: "Lock Screen too",
-                      text: "The video you click becomes macOS's own wallpaper as well: it moves on the Lock Screen (macOS 26) and the menu bar takes its colours.")
+                      text: "The video you click becomes macOS's own wallpaper as well: it moves on the Lock Screen (macOS 26) and the menu bar takes its colours. The … button on a card puts a video on one place only, or makes it the screen saver.")
             }
 
             Divider()

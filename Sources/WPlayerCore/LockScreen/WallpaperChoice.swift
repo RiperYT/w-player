@@ -9,11 +9,18 @@ import Foundation
 public enum WallpaperChoice {
     public static let aerialsProvider = "com.apple.wallpaper.choice.aerials"
 
-    /// The store with the desktop on the aerial `assetID` everywhere a desktop is chosen. The screen saver stays: a
-    /// `Linked` choice is split into `Desktop` (the aerial) and `Idle` (what it was).
-    public static func choosingAerial(_ assetID: String, in store: [String: Any], now: Date = Date()) throws -> [String: Any] {
+    public enum Slot: String, Sendable {
+        /// The wallpaper: the Lock Screen and, under W-Player's window, the desktop. The menu bar takes its colours.
+        case lockScreen = "Desktop"
+        case screenSaver = "Idle"
+    }
+
+    /// The store with the aerial `assetID` in `slot` everywhere a choice is kept. The other slot stays as it was: a
+    /// `Linked` choice is split into `Desktop` and `Idle` first.
+    public static func choosingAerial(_ assetID: String, for slot: Slot = .lockScreen, in store: [String: Any],
+                                      now: Date = Date()) throws -> [String: Any] {
         let configuration = try PropertyListSerialization.data(fromPropertyList: ["assetID": assetID], format: .binary, options: 0)
-        let desktop: [String: Any] = [
+        let choice: [String: Any] = [
             "Content": [
                 "Choices": [["Provider": aerialsProvider, "Configuration": configuration, "Files": [Any]()]],
                 "Shuffle": "$null",
@@ -25,19 +32,20 @@ public enum WallpaperChoice {
         return rewritten(store) { entry in
             var entry = entry
             if let linked = entry["Linked"] {
+                entry["Desktop"] = linked
                 entry["Idle"] = linked
                 entry["Linked"] = nil
                 entry["Type"] = "individual"
             }
-            entry["Desktop"] = desktop
+            entry[slot.rawValue] = choice
             return entry
         }
     }
 
-    /// The aerial chosen for the desktop of all spaces and displays, if it is one.
-    public static func desktopAerialID(in store: [String: Any]) -> String? {
+    /// The aerial chosen in `slot` for all spaces and displays, if it is one.
+    public static func aerialID(in store: [String: Any], for slot: Slot = .lockScreen) -> String? {
         guard let all = store["AllSpacesAndDisplays"] as? [String: Any],
-              let choice = (all["Desktop"] ?? all["Linked"]) as? [String: Any],
+              let choice = (all[slot.rawValue] ?? all["Linked"]) as? [String: Any],
               let content = choice["Content"] as? [String: Any],
               let first = (content["Choices"] as? [[String: Any]])?.first,
               first["Provider"] as? String == aerialsProvider,
@@ -51,7 +59,7 @@ public enum WallpaperChoice {
     static func rewritten(_ store: [String: Any], _ change: ([String: Any]) -> [String: Any]) -> [String: Any] {
         func walk(_ value: Any) -> Any {
             guard var dict = value as? [String: Any] else { return value }
-            if dict["Desktop"] != nil || dict["Linked"] != nil { return change(dict) }
+            if dict["Desktop"] != nil || dict["Idle"] != nil || dict["Linked"] != nil { return change(dict) }
             for (key, child) in dict { dict[key] = walk(child) }
             return dict
         }

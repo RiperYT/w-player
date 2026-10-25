@@ -23,7 +23,7 @@ import Testing
 
     @Test func everyDesktopGetsTheAerialAndTheScreenSaverStays() throws {
         let chosen = try WallpaperChoice.choosingAerial("11111111-2222-4333-8444-555555555555", in: store())
-        #expect(WallpaperChoice.desktopAerialID(in: chosen) == "11111111-2222-4333-8444-555555555555")
+        #expect(WallpaperChoice.aerialID(in: chosen) == "11111111-2222-4333-8444-555555555555")
 
         let all = try #require(chosen["AllSpacesAndDisplays"] as? [String: Any])
         #expect(NSDictionary(dictionary: all["Idle"] as! [String: Any]).isEqual(to: saver))
@@ -41,6 +41,18 @@ import Testing
         #expect(NSDictionary(dictionary: system["Idle"] as! [String: Any]).isEqual(to: saver))
     }
 
+    /// The screen saver alone: the wallpaper and Lock Screen stay.
+    @Test func theScreenSaverAlone() throws {
+        let chosen = try WallpaperChoice.choosingAerial("BBBB", for: .screenSaver, in: store())
+        #expect(WallpaperChoice.aerialID(in: chosen, for: .screenSaver) == "BBBB")
+        #expect(WallpaperChoice.aerialID(in: chosen, for: .lockScreen) == nil)
+        let all = try #require(chosen["AllSpacesAndDisplays"] as? [String: Any])
+        #expect(NSDictionary(dictionary: all["Desktop"] as! [String: Any]).isEqual(to: image))
+        // A linked pair keeps its wallpaper as the Desktop half.
+        let system = try #require(chosen["SystemDefault"] as? [String: Any])
+        #expect(NSDictionary(dictionary: system["Desktop"] as! [String: Any]).isEqual(to: saver))
+    }
+
     @Test func theConfigurationIsTheBinaryPlistMacOSWrites() throws {
         let chosen = try WallpaperChoice.choosingAerial("AAAA", in: store())
         let all = chosen["AllSpacesAndDisplays"] as! [String: Any]
@@ -48,6 +60,6 @@ import Testing
         let choice = (content["Choices"] as! [[String: Any]])[0]
         let data = try #require(choice["Configuration"] as? Data)
         #expect(data.starts(with: Data("bplist00".utf8)))
-        #expect(WallpaperChoice.desktopAerialID(in: store()) == nil)
+        #expect(WallpaperChoice.aerialID(in: store()) == nil)
     }
 }

@@ -4,6 +4,19 @@ import Observation
 import ServiceManagement
 import WPlayerCore
 
+/// Where a video goes when the user picks it.
+enum Placement {
+    /// The desktop (W-Player's window) and macOS's own wallpaper: the Lock Screen and the menu bar's colours. A click.
+    case everywhere
+    case desktopOnly, lockScreenOnly, screenSaver
+}
+
+/// The W-Player videos macOS has chosen now (read from its Index.plist), for the labels on the cards.
+struct SystemChoice: Equatable {
+    var lockScreen: UUID?
+    var screenSaver: UUID?
+}
+
 /// A message in the middle of the window: what happened and what to do.
 struct AppAlert: Identifiable {
     let id = UUID()
@@ -23,11 +36,8 @@ final class AppModel {
     private(set) var conditions = PlaybackConditions()
     /// The welcome sheet: on the first launch, and from the menu.
     var showsWelcome = !UserDefaults.standard.bool(forKey: "welcomeDone")
-
-    /// Set the system wallpaper to the video's first frame, so the menu bar and Mission Control match it.
-    var matchesSystemWallpaper: Bool {
-        didSet { UserDefaults.standard.set(matchesSystemWallpaper, forKey: "matchesSystemWallpaper") }
-    }
+    /// Set by `refreshSystemChoice`, and by the snapshot renderer.
+    var systemChoice = SystemChoice()
 
     var preferences: PlaybackPreferences {
         didSet {
@@ -47,6 +57,7 @@ final class AppModel {
     @ObservationIgnored private let monitor = SystemMonitor()
     @ObservationIgnored private var manifestWatch: DispatchSourceFileSystemObject?
     @ObservationIgnored private var resyncTask: Task<Void, Never>?
+    @ObservationIgnored private var choiceWatch: DispatchSourceFileSystemObject?
     /// Opens the library window; set by the menu bar item, which has SwiftUI's `openWindow`.
     @ObservationIgnored var openLibraryWindow: (() -> Void)?
 
@@ -54,7 +65,6 @@ final class AppModel {
         self.store = store
         isLive = live
         let defaults = UserDefaults.standard
-        matchesSystemWallpaper = defaults.object(forKey: "matchesSystemWallpaper") as? Bool ?? true
         if live { SystemWallpaper.backUpOnce() }
         preferences = PlaybackPreferences(
             pauseOnBattery: defaults.bool(forKey: "pauseOnBattery"),
@@ -78,13 +88,13 @@ final class AppModel {
         }
         monitor.start()
         showCurrent()
-        // A wallpaper chosen before this version made it the system one (0.1.0 set only a still) gets that once.
-        let needsMatch = current.map { defaults.string(forKey: "systemWallpaperID") != $0.id.uuidString } ?? false
+        refreshSystemChoice()
         Task {
-            if needsMatch, let current { await matchSystemWallpaper(to: current) }
             await resyncLockScreen(atLaunch: true)
+            await readMissingAudioInfo()
         }
         watchManifest()
+        watchSystemChoice()
     }
 
     // MARK: Playback
@@ -92,37 +102,114 @@ final class AppModel {
     var current: Wallpaper? { library.current }
     var pauseReason: PauseReason? { PlaybackPolicy.pauseReason(conditions, preferences) }
 
-    func setCurrent(_ wallpaper: Wallpaper?) {
+    /// Puts a video where the user picked: a click is `.everywhere`, the card's menu has the others.
+    func place(_ wallpaper: Wallpaper, _ placement: Placement) {
+        switch placement {
+        case .everywhere:
+            setCurrent(wallpaper)
+            Task { await putOnSystem(wallpaper, .lockScreen) }
+        case .desktopOnly:
+            setCurrent(wallpaper)
+        case .lockScreenOnly:
+            Task { await putOnSystem(wallpaper, .lockScreen) }
+        case .screenSaver:
+            Task { await putOnSystem(wallpaper, .screenSaver) }
+        }
+    }
+
+    /// The video on the desktop: W-Player's own window.
+    private func setCurrent(_ wallpaper: Wallpaper?) {
         library.currentID = wallpaper?.id
         save()
         showCurrent()
-        if let wallpaper { Task { await matchSystemWallpaper(to: wallpaper) } }
     }
 
-    /// Makes the video macOS's own wallpaper too. On macOS 26 that is W-Player's aerial of it: it moves on the Lock Screen
-    /// and the menu bar takes its colours. Without the aerials list (older macOS), the video's first frame.
-    private func matchSystemWallpaper(to wallpaper: Wallpaper) async {
-        guard matchesSystemWallpaper, isLive else { return }
-        do {
-            if aerials.isAvailable {
-                if let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }),
-                   !library.wallpapers[index].onLockScreen {
-                    library.wallpapers[index].onLockScreen = true
-                    save()
+    func isOnLockScreen(_ wallpaper: Wallpaper) -> Bool { systemChoice.lockScreen == wallpaper.id }
+    func isScreenSaver(_ wallpaper: Wallpaper) -> Bool { systemChoice.screenSaver == wallpaper.id }
+
+    /// Makes the video macOS's wallpaper (`.lockScreen`: the Lock Screen, and the menu bar's colours) or its screen saver:
+    /// W-Player's aerial of it, added to macOS's list first. Without that list (older macOS) the wallpaper is the video's
+    /// first frame and there is no screen saver. Videos macOS no longer uses leave its list afterwards.
+    private func putOnSystem(_ wallpaper: Wallpaper, _ slot: WallpaperChoice.Slot) async {
+        guard isLive else { return }
+        guard aerials.isAvailable else {
+            if slot == .lockScreen {
+                do { try await setStill(of: wallpaper) } catch {
+                    alert = AppAlert(title: "The System Wallpaper Wasn't Changed", message: error.localizedDescription)
                 }
-                await resyncLockScreen()
-                // The export may have failed (resync said so), or another video been clicked meanwhile.
-                guard FileManager.default.fileExists(atPath: aerials.videoURL(wallpaper.id).path),
-                      library.currentID == wallpaper.id else { return }
-                try? await Task.sleep(for: .seconds(2))            // let the agent restarted by the resync settle
-                try SystemWallpaper.chooseAerial(wallpaper.id.uuidString)
             } else {
-                try await setStill(of: wallpaper)
+                alert = AppAlert(title: "Screen Saver Isn't Ready",
+                                 message: "Open System Settings › Wallpaper once and wait until Apple's videos show up, then try again. This needs macOS 26 or later.",
+                                 actionTitle: "Open Wallpaper Settings", action: Self.openWallpaperSettings)
             }
-            UserDefaults.standard.set(wallpaper.id.uuidString, forKey: "systemWallpaperID")
+            return
+        }
+        do {
+            if let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }),
+               !library.wallpapers[index].onLockScreen {
+                library.wallpapers[index].onLockScreen = true
+                save()
+            }
+            await resyncLockScreen()
+            // The export may have failed (resync said so), or the video been removed meanwhile.
+            guard FileManager.default.fileExists(atPath: aerials.videoURL(wallpaper.id).path),
+                  library.wallpapers.contains(where: { $0.id == wallpaper.id }) else { return }
+            try? await Task.sleep(for: .seconds(2))            // let the agent restarted by the resync settle
+            try SystemWallpaper.chooseAerial(wallpaper.id.uuidString, for: slot)
+            refreshSystemChoice()
+            await pruneSystemList()
         } catch {
             alert = AppAlert(title: "The System Wallpaper Wasn't Changed", message: error.localizedDescription)
         }
+    }
+
+    /// Takes out of macOS's list the W-Player videos it uses neither as the wallpaper nor as the screen saver.
+    private func pruneSystemList() async {
+        let used = [systemChoice.lockScreen, systemChoice.screenSaver].compactMap { $0 }
+        let unused = library.wallpapers.filter { $0.onLockScreen && !used.contains($0.id) }
+        guard !unused.isEmpty else { return }
+        for wallpaper in unused {
+            if let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }) {
+                library.wallpapers[index].onLockScreen = false
+            }
+        }
+        save()
+        await resyncLockScreen()
+        for wallpaper in unused { aerials.removeFiles(wallpaper.id) }
+    }
+
+    private func refreshSystemChoice() {
+        guard isLive else { return }
+        let chosen = SystemWallpaper.chosenAerials
+        systemChoice = SystemChoice(lockScreen: chosen.lockScreen.flatMap(UUID.init(uuidString:)),
+                                    screenSaver: chosen.screenSaver.flatMap(UUID.init(uuidString:)))
+    }
+
+    /// The labels follow System Settings too: a wallpaper picked there shows up on the cards.
+    private func watchSystemChoice() {
+        let folder = SystemWallpaper.store.deletingLastPathComponent()
+        let fd = open(folder.path, O_EVTONLY)
+        guard fd >= 0 else { return }
+        let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .rename], queue: .main)
+        source.setEventHandler { [weak self] in
+            MainActor.assumeIsolated { self?.refreshSystemChoice() }
+        }
+        source.setCancelHandler { close(fd) }
+        source.resume()
+        choiceWatch = source
+    }
+
+    /// Videos added before W-Player looked for sound (0.1.0) get looked at once, so the sound button shows only where
+    /// there is sound.
+    private func readMissingAudioInfo() async {
+        var changed = false
+        for wallpaper in library.wallpapers where wallpaper.hasAudio == nil {
+            guard let info = try? await VideoFile.info(of: store.videoURL(wallpaper)),
+                  let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }) else { continue }
+            library.wallpapers[index].hasAudio = info.hasAudio
+            changed = true
+        }
+        if changed { save() }
     }
 
     private func setStill(of wallpaper: Wallpaper) async throws {
@@ -207,7 +294,7 @@ final class AppModel {
                     }
                     library.wallpapers.append(wallpaper)
                     if library.currentID == nil {
-                        setCurrent(wallpaper)
+                        place(wallpaper, .everywhere)
                     } else {
                         save()
                     }
@@ -228,16 +315,23 @@ final class AppModel {
     }
 
     func remove(_ wallpaper: Wallpaper) {
+        let wasLockScreen = systemChoice.lockScreen == wallpaper.id
         library.wallpapers.removeAll { $0.id == wallpaper.id }
         if library.currentID == wallpaper.id { library.currentID = nil }
         save()
         showCurrent()
         store.deleteFiles(of: wallpaper)
-        if wallpaper.onLockScreen {
-            Task {
+        Task {
+            // macOS's wallpaper mustn't point at a video that is gone: the desktop's video takes over, or what the user
+            // had before W-Player.
+            if wasLockScreen {
+                if let current { await putOnSystem(current, .lockScreen) } else { try? SystemWallpaper.restore() }
+            }
+            if wallpaper.onLockScreen {
                 await resyncLockScreen()
                 aerials.removeFiles(wallpaper.id)
             }
+            refreshSystemChoice()
         }
     }
 
@@ -256,32 +350,6 @@ final class AppModel {
     }
 
     // MARK: Lock Screen
-
-    /// Offers the video in System Settings › Wallpaper (for the Lock Screen and the screen saver), or takes it away.
-    func setOnLockScreen(_ wallpaper: Wallpaper, _ on: Bool) {
-        guard let index = library.wallpapers.firstIndex(where: { $0.id == wallpaper.id }) else { return }
-        guard !on || aerials.isAvailable else {
-            alert = AppAlert(title: "Lock Screen Isn't Ready",
-                             message: "Open System Settings › Wallpaper once and wait until Apple's videos show up, then try again. This needs macOS 26 or later.",
-                             actionTitle: "Open Wallpaper Settings", action: Self.openWallpaperSettings)
-            return
-        }
-        library.wallpapers[index].onLockScreen = on
-        save()
-        let isSystemWallpaper = SystemWallpaper.chosenAerialID == wallpaper.id.uuidString
-        Task {
-            await resyncLockScreen()
-            if on {
-                alert = AppAlert(title: "\(wallpaper.title) Is in Wallpaper Settings",
-                                 message: "Choose it in System Settings › Wallpaper under W-Player, for example as the screen saver. Clicking a video in W-Player makes it the wallpaper and the Lock Screen by itself.",
-                                 actionTitle: "Open Wallpaper Settings", action: Self.openWallpaperSettings)
-            } else {
-                aerials.removeFiles(wallpaper.id)
-                // It was macOS's wallpaper: its first frame takes over, instead of an aerial that is gone.
-                if isSystemWallpaper { try? await setStill(of: wallpaper) }
-            }
-        }
-    }
 
     /// Makes the manifest match the library: prepares missing movies (another app may have deleted them), writes our
     /// category, takes out broken categories, and restarts WallpaperAgent when something changed.

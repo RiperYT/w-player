@@ -33,6 +33,10 @@ struct LibraryView: View {
             .toolbar {
                 ToolbarItem { FindVideosMenu() }
                 ToolbarItem {
+                    SettingsLink { Label("Settings", systemImage: "gearshape") }
+                        .help("Settings")
+                }
+                ToolbarItem {
                     Button { model.togglePause() } label: {
                         Label(model.conditions.userPaused ? "Resume" : "Pause",
                               systemImage: model.conditions.userPaused ? "play.fill" : "pause.fill")

@@ -7,11 +7,11 @@ screen, stops it when nobody sees it, and on macOS 26 also puts it on the Lock S
 - **Under your icons, on every Space.** The video runs muted and looping behind everything, like a real wallpaper.
 - **Quiet on power.** It pauses while the screen is locked or asleep, when a full-screen app covers the desktop and in
   Low Power Mode, and on battery power if you want. It never keeps the display awake.
-- **Lock Screen and screen saver (macOS 26).** Right-click a video, choose **Use on Lock Screen**, then pick it in
-  **System Settings › Wallpaper** under **W-Player**.
+- **Lock Screen too (macOS 26).** A click makes the video macOS's own wallpaper as well, so it moves on the Lock Screen
+  and the menu bar takes its colours. The **…** button on a card has **Desktop Only**, **Lock Screen Only** and
+  **Use as Screen Saver**.
 - **Silent unless you ask**, per video.
-- **The menu bar matches** the video: its first frame becomes macOS's own wallpaper. **Restore Wallpaper and Quit** in
-  the menu bar puts back what you had.
+- **Restore Wallpaper and Quit** (menu bar, or Settings) puts back the wallpaper and screen saver you had.
 - **No account, no telemetry.** W-Player only reads the files you give it, and talks to nothing but GitHub, to see
   whether a newer W-Player is out (Settings › Updates). **Find Videos** links to sites to download from.
 

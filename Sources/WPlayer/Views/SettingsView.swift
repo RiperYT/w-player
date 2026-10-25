@@ -20,18 +20,19 @@ struct SettingsView: View {
             }
             Section("General") {
                 Toggle("Open at login", isOn: $model.opensAtLogin)
-                Toggle("Use the video as the system wallpaper", isOn: $model.matchesSystemWallpaper)
-                Text("The video you click also becomes macOS's own wallpaper: it moves on the Lock Screen (macOS 26) and the menu bar takes its colours. Restore Wallpaper and Quit in the menu bar puts back the one you had.")
+            }
+            Section("Wallpaper") {
+                Text("Clicking a video puts it on the desktop and makes it macOS's own wallpaper: it moves on the Lock Screen (macOS 26) and the menu bar takes its colours. The … button on a card has Desktop Only, Lock Screen Only and Use as Screen Saver.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                HStack {
+                    Button("Open Wallpaper Settings") { AppModel.openWallpaperSettings() }
+                    Spacer()
+                    Button("Restore Wallpaper and Quit") { model.restoreAndQuit() }
+                        .help("Puts back the wallpaper and screen saver you had before W-Player and takes its videos out of System Settings")
+                }
             }
             if model.updater.isEnabled { UpdateSettings() }
-            Section("Lock Screen") {
-                Text("The video on the desktop is on the Lock Screen too. The lock on a card adds another video to System Settings › Wallpaper under W-Player, for example to pick it as the screen saver.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Button("Open Wallpaper Settings") { AppModel.openWallpaperSettings() }
-            }
         }
         .formStyle(.grouped)
         .frame(width: 460)

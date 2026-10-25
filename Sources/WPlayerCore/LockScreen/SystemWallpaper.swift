@@ -35,25 +35,25 @@ public enum SystemWallpaper {
         }
     }
 
-    /// W-Player's aerial `assetID` as the wallpaper (desktop and Lock Screen) of every space and display
+    /// W-Player's aerial `assetID` as the wallpaper (Lock Screen) or the screen saver of every space and display
     /// (`WallpaperChoice`), then WallpaperAgent reads it again. The aerial must be in the manifest already.
-    public static func chooseAerial(_ assetID: String) throws {
+    public static func chooseAerial(_ assetID: String, for slot: WallpaperChoice.Slot = .lockScreen) throws {
         backUpOnce()
         let data = try Data(contentsOf: store)
         guard let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        let chosen = try WallpaperChoice.choosingAerial(assetID, in: plist)
+        let chosen = try WallpaperChoice.choosingAerial(assetID, for: slot, in: plist)
         try PropertyListSerialization.data(fromPropertyList: chosen, format: .binary, options: 0).write(to: store, options: .atomic)
         LockScreenAerials.reloadWallpaperAgent()
     }
 
-    /// The aerial macOS has as the wallpaper now, if it is one.
-    public static var chosenAerialID: String? {
+    /// The aerials macOS has as the wallpaper (Lock Screen) and as the screen saver now, where they are ones.
+    public static var chosenAerials: (lockScreen: String?, screenSaver: String?) {
         guard let data = try? Data(contentsOf: store),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        else { return nil }
-        return WallpaperChoice.desktopAerialID(in: plist)
+        else { return (nil, nil) }
+        return (WallpaperChoice.aerialID(in: plist, for: .lockScreen), WallpaperChoice.aerialID(in: plist, for: .screenSaver))
     }
 
     /// Puts back the wallpaper (and screen saver) the user had before W-Player, then forgets the copy so the next change

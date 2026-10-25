@@ -1,7 +1,8 @@
 import SwiftUI
 import WPlayerCore
 
-/// One video: its frame, a label strip (● ON DESKTOP · 4K · 0:20), and its title. Click to put it on the desktop.
+/// One video: its frame, a label strip that says where it is (● DESKTOP · LOCK SCREEN · SCREEN SAVER, as macOS has it),
+/// and its title. A click puts it everywhere; the … menu has the other places.
 struct WallpaperCard: View {
     @Environment(AppModel.self) private var model
     let wallpaper: Wallpaper
@@ -9,17 +10,24 @@ struct WallpaperCard: View {
     @State private var hovering = false
 
     private var isCurrent: Bool { model.library.currentID == wallpaper.id }
+    private var places: [String] {
+        var places: [String] = []
+        if isCurrent { places.append(model.pauseReason == nil ? "DESKTOP" : "PAUSED") }
+        if model.isOnLockScreen(wallpaper) { places.append("LOCK SCREEN") }
+        if model.isScreenSaver(wallpaper) { places.append("SCREEN SAVER") }
+        return places
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Button { model.setCurrent(wallpaper) } label: { frame }
+            Button { model.place(wallpaper, .everywhere) } label: { frame }
                 .buttonStyle(.plain)
-                .help(isCurrent ? "On your desktop" : "Set as Wallpaper")
+                .help("Set as Wallpaper: the desktop and the Lock Screen")
             Text(wallpaper.title)
                 .font(.body.weight(.medium))
                 .lineLimit(1)
         }
-        .contextMenu { menu }
+        .contextMenu { PlacementMenu(wallpaper: wallpaper, rename: rename) }
     }
 
     private var frame: some View {
@@ -39,7 +47,7 @@ struct WallpaperCard: View {
                     .foregroundStyle(.white, .black.opacity(0.35))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            if hovering || wallpaper.onLockScreen || wallpaper.playsSound {
+            if hovering || wallpaper.playsSound {
                 cornerButtons
             }
             label
@@ -55,42 +63,49 @@ struct WallpaperCard: View {
         .onHover { hovering = $0 }
     }
 
-    /// Sound and Lock Screen, in the top right corner: on hover, and always while turned on.
+    /// The sound (only for a video that has some) and the … menu, in the top right corner.
     private var cornerButtons: some View {
         HStack(spacing: 6) {
-            if wallpaper.hasAudio != false {
-                CornerButton(symbol: wallpaper.playsSound ? "speaker.wave.2.fill" : "speaker.slash",
-                             on: wallpaper.playsSound,
-                             help: wallpaper.playsSound ? "Mute this video" : "Play this video's sound") {
-                    model.setSound(wallpaper, !wallpaper.playsSound)
+            if wallpaper.hasAudio == true {
+                Button { model.setSound(wallpaper, !wallpaper.playsSound) } label: {
+                    CornerIcon(symbol: wallpaper.playsSound ? "speaker.wave.2.fill" : "speaker.slash", on: wallpaper.playsSound)
                 }
+                .buttonStyle(.plain)
+                .help(wallpaper.playsSound ? "Mute this video" : "Play this video's sound")
             }
-            CornerButton(symbol: wallpaper.onLockScreen ? "lock.fill" : "lock", on: wallpaper.onLockScreen,
-                         help: wallpaper.onLockScreen ? "Take it off the Lock Screen" : "Use on Lock Screen") {
-                model.setOnLockScreen(wallpaper, !wallpaper.onLockScreen)
+            if hovering {
+                Menu {
+                    PlacementMenu(wallpaper: wallpaper, rename: rename)
+                } label: {
+                    CornerIcon(symbol: "ellipsis", on: false)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Where to use this video, and more")
             }
         }
         .padding(8)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
     }
 
-    /// The strip at the bottom of the frame: whether it's on the desktop or the Lock Screen, then size and length.
+    /// The strip at the bottom of the frame: where the video is, then its size and length.
     private var label: some View {
         HStack(spacing: 6) {
-            if isCurrent {
-                Circle().fill(model.pauseReason == nil ? Color.green : Color.orange).frame(width: 6, height: 6)
-                Text(model.pauseReason == nil ? "ON DESKTOP" : "PAUSED")
-            }
-            if wallpaper.onLockScreen {
-                if isCurrent { Text("·") }
-                Image(systemName: "lock.fill").font(.system(size: 8))
-                Text("LOCK SCREEN")
+            if !places.isEmpty {
+                Circle().fill(model.pauseReason == nil || !isCurrent ? Color.green : Color.orange).frame(width: 6, height: 6)
+                Text(places.joined(separator: " · "))
+                    .lineLimit(1)
             }
             if wallpaper.playsSound {
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 8))
             }
-            Spacer(minLength: 0)
-            Text([wallpaper.resolutionLabel, wallpaper.durationLabel].compactMap { $0 }.joined(separator: " · "))
+            Spacer(minLength: 4)
+            // Two places fill the strip: the length gives way.
+            Text((places.count > 1 ? [wallpaper.resolutionLabel] : [wallpaper.resolutionLabel, wallpaper.durationLabel])
+                .compactMap { $0 }.joined(separator: " · "))
+                .lineLimit(1)
         }
         .font(Theme.label)
         .tracking(0.6)
@@ -99,15 +114,24 @@ struct WallpaperCard: View {
         .frame(height: Theme.labelHeight)
         .background(.black.opacity(0.55))
     }
+}
 
-    @ViewBuilder private var menu: some View {
-        Button("Set as Wallpaper") { model.setCurrent(wallpaper) }
-            .disabled(isCurrent)
-        Toggle("Use on Lock Screen", isOn: Binding(get: { wallpaper.onLockScreen },
-                                                   set: { model.setOnLockScreen(wallpaper, $0) }))
-        Toggle("Play Sound", isOn: Binding(get: { wallpaper.playsSound }, set: { model.setSound(wallpaper, $0) }))
-            .disabled(wallpaper.hasAudio == false)
+/// The card's menu: where the video goes, then the rest. The same on right-click and on the … button.
+private struct PlacementMenu: View {
+    @Environment(AppModel.self) private var model
+    let wallpaper: Wallpaper
+    let rename: () -> Void
+
+    var body: some View {
+        Button("Set as Wallpaper") { model.place(wallpaper, .everywhere) }
+        Button("Desktop Only") { model.place(wallpaper, .desktopOnly) }
+        Button("Lock Screen Only") { model.place(wallpaper, .lockScreenOnly) }
+        Button("Use as Screen Saver") { model.place(wallpaper, .screenSaver) }
+            .disabled(!model.aerials.isAvailable)
         Divider()
+        if wallpaper.hasAudio == true {
+            Toggle("Play Sound", isOn: Binding(get: { wallpaper.playsSound }, set: { model.setSound(wallpaper, $0) }))
+        }
         Button("Rename…", action: rename)
         Button("Show in Finder") { model.revealInFinder(wallpaper) }
         Divider()
@@ -115,22 +139,16 @@ struct WallpaperCard: View {
     }
 }
 
-/// A small round button on a card's frame.
-private struct CornerButton: View {
+/// A small round button face on a card's frame.
+private struct CornerIcon: View {
     let symbol: String
     let on: Bool
-    let help: String
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
-                .frame(width: 26, height: 26)
-                .foregroundStyle(on ? Color.white : Color.primary)
-                .background(on ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.regularMaterial), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .help(help)
+        Image(systemName: symbol)
+            .font(.system(size: 11, weight: .semibold))
+            .frame(width: 26, height: 26)
+            .foregroundStyle(on ? Color.white : Color.primary)
+            .background(on ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.regularMaterial), in: Circle())
     }
 }

@@ -21,6 +21,7 @@ enum SnapshotRenderer {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let empty = AppModel(store: LibraryStore(folder: sandbox.appendingPathComponent("empty")), live: false)
             let full = AppModel(store: try sampleLibrary(in: sandbox.appendingPathComponent("full")), live: false)
+            full.systemChoice = SystemChoice(lockScreen: full.library.wallpapers[0].id, screenSaver: full.library.wallpapers[1].id)
             let shots: [(String, CGSize?, AnyView)] = [
                 ("welcome", nil, AnyView(WelcomeView().environment(empty))),
                 ("library-empty", CGSize(width: 860, height: 560), AnyView(LibraryView().environment(empty))),

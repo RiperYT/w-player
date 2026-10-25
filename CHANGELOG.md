@@ -1,11 +1,18 @@
 # Changelog
 
-## [0.1.1] - unreleased
+## [0.1.1] - 2026-10-25
 
 - **The Lock Screen moves with the desktop.** Clicking a video makes it macOS's own wallpaper as W-Player's video
   wallpaper (macOS 26), not a still frame: it plays on the Lock Screen, and the menu bar takes its colours. The screen
   saver stays as it was. 0.1.0 set the first frame, which stood still on the Lock Screen. On older macOS the first frame
   is still what W-Player sets.
+- **One place at a time, if you like.** The … button on a card (or a right-click) has Set as Wallpaper, Desktop Only,
+  Lock Screen Only and Use as Screen Saver.
+- **Labels say where a video is**, as macOS has it: DESKTOP, LOCK SCREEN, SCREEN SAVER. A wallpaper picked in System
+  Settings shows up on the cards too. The lock button is gone: W-Player adds a video to System Settings › Wallpaper
+  when it is used there and takes it out when it no longer is.
+- The sound button shows only on videos that have sound.
+- **Settings in the window:** a gear in the library's toolbar. Settings › Wallpaper has Restore Wallpaper and Quit.
 
 ## [0.1.0] - 2026-10-25
 
