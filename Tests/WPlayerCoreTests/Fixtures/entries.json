@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "initialAssetCount": 2,
+  "localizationVersion": "test-1",
+  "categories": [
+    {
+      "id": "AAAAAAAA-0000-4000-8000-000000000001",
+      "localizedNameKey": "Landscapes",
+      "localizedDescriptionKey": "LandscapesDescription",
+      "preferredOrder": 0,
+      "previewImage": "https://example.com/landscapes.png",
+      "representativeAssetID": "AAAAAAAA-0000-4000-8000-0000000000A1",
+      "subcategories": [
+        {
+          "id": "AAAAAAAA-0000-4000-8000-000000000002",
+          "localizedNameKey": "Lake",
+          "localizedDescriptionKey": "Lake",
+          "preferredOrder": 0,
+          "previewImage": "https://example.com/lake.png",
+          "representativeAssetID": "AAAAAAAA-0000-4000-8000-0000000000A1"
+        }
+      ]
+    },
+    {
+      "id": "BBBBBBBB-0000-4000-8000-000000000001",
+      "localizedNameKey": "Another App",
+      "localizedDescriptionKey": "Another App",
+      "preferredOrder": 0,
+      "previewImage": "file:///tmp/other.png",
+      "representativeAssetID": "BBBBBBBB-0000-4000-8000-0000000000B1",
+      "subcategories": []
+    }
+  ],
+  "assets": [
+    {
+      "id": "AAAAAAAA-0000-4000-8000-0000000000A1",
+      "accessibilityLabel": "Lake Day",
+      "localizedNameKey": "LAKE_NAME",
+      "categories": ["AAAAAAAA-0000-4000-8000-000000000001"],
+      "subcategories": ["AAAAAAAA-0000-4000-8000-000000000002"],
+      "includeInShuffle": true,
+      "showInTopLevel": true,
+      "pointsOfInterest": {"0": "LAKE_0"},
+      "preferredOrder": 1,
+      "previewImage": "https://example.com/lake-day.png",
+      "shotID": "LAKE_001",
+      "group": "unknown-key-apple-may-add",
+      "url-4K-SDR-240FPS": "https://example.com/lake-day.mov"
+    },
+    {
+      "id": "BBBBBBBB-0000-4000-8000-0000000000B1",
+      "accessibilityLabel": "Other",
+      "localizedNameKey": "Other",
+      "categories": ["BBBBBBBB-0000-4000-8000-000000000001"],
+      "subcategories": [],
+      "includeInShuffle": true,
+      "showInTopLevel": true,
+      "pointsOfInterest": {},
+      "preferredOrder": 0,
+      "previewImage": "file:///tmp/other.png",
+      "shotID": "OTHER",
+      "url-4K-SDR-240FPS": "file:///tmp/other.mov"
+    }
+  ]
+}
